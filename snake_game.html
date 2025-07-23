@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>简单贪吃蛇游戏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>贪吃蛇游戏 - 移动端适配版</title>
     <style>
         * {
             margin: 0;
@@ -97,7 +97,7 @@
         <div class="score-container">
             分数: <span id="score">0</span>
         </div>
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div class="controls">
             <button id="startBtn">开始游戏</button>
             <button id="pauseBtn">暂停</button>
@@ -114,6 +114,36 @@
         // 获取DOM元素
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        // 游戏设置
+        const gridSize = 20;
+        let tileSize;
+
+        // 更新tileSize的函数
+        function updateTileSize() {
+            tileSize = canvas.width / gridSize;
+        }
+
+        // 移动端适配
+        function resizeCanvas() {
+            // 获取屏幕宽度
+            const screenWidth = window.innerWidth;
+            // 设置canvas大小，确保在移动设备上有合适的尺寸
+            const size = Math.min(screenWidth - 40, 400);
+            canvas.width = size;
+            canvas.height = size;
+            // 更新tileSize
+            updateTileSize();
+            // 重新绘制游戏
+            if (!isGameOver) {
+                draw();
+            }
+        }
+
+        // 初始调整大小
+        resizeCanvas();
+        // 监听窗口大小变化
+        window.addEventListener('resize', resizeCanvas);
         const scoreElement = document.getElementById('score');
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -121,10 +151,6 @@
         const gameOverElement = document.getElementById('gameOver');
         const finalScoreElement = document.getElementById('finalScore');
         const playAgainBtn = document.getElementById('playAgainBtn');
-
-        // 游戏设置
-        const gridSize = 20;
-        const tileSize = canvas.width / gridSize;
         let snake = [];
         let food = {};
         let direction = '';
@@ -282,6 +308,85 @@
             finalScoreElement.textContent = score;
             gameOverElement.style.display = 'block';
         }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            // 防止方向键滚动页面
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (direction !== 'down') nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                    if (direction !== 'up') nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                    if (direction !== 'right') nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                    if (direction !== 'left') nextDirection = 'right';
+                    break;
+                case ' ': // 空格键暂停/继续
+                    if (!isGameOver) {
+                        isPaused = !isPaused;
+                        if (!isPaused && !gameLoopId) {
+                            gameLoop();
+                        }
+                    }
+                    break;
+            }
+        });
+
+        // 移动端触摸控制
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // 触摸开始事件
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        // 触摸移动事件
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+
+        // 触摸结束事件
+        canvas.addEventListener('touchend', (e) => {
+            if (isGameOver || isPaused) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            // 检测滑动方向
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 水平滑动
+                if (diffX > 20) {
+                    // 向右滑动
+                    if (direction !== 'left') nextDirection = 'right';
+                } else if (diffX < -20) {
+                    // 向左滑动
+                    if (direction !== 'right') nextDirection = 'left';
+                }
+            } else {
+                // 垂直滑动
+                if (diffY > 20) {
+                    // 向下滑动
+                    if (direction !== 'up') nextDirection = 'down';
+                } else if (diffY < -20) {
+                    // 向上滑动
+                    if (direction !== 'down') nextDirection = 'up';
+                }
+            }
+        });
 
         // 键盘控制
         document.addEventListener('keydown', (e) => {
